@@ -78,6 +78,8 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 
 	pubActExec.publish(cmd);
 	ROS_INFO("Actions sent");
+	
+	exit(0);
 }
 
 string actionModule::chooseAction(string actionType, double x, double y, double z, double xf, double yf, double zf){
