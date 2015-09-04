@@ -31,12 +31,6 @@ elapsedTime(0)
 	
 	subDBN = n.subscribe ("/DBN/states_list", 1, &actionModule::fromDBN, this);
 	
-	pr2_pbd_speech_recognition::Command cmd;
-	cmd.command = cmd.RECORD_OBJECT_POSE;
-
-	pubActExec.publish(cmd);
-	ROS_INFO("Look down");
-	
 	//Link the escape comd to the sign out method
 	signal(SIGINT, &actionModule::sigintHandler);
 }
