@@ -52,6 +52,7 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 	bool found = false;
 	//Search if policy already receved in the past
 	for(auto policy: current_policies){
+		cout<<policy.cmd<<endl;
 		if(policy.cmd.compare(actionType) == 0){
 			found = true;
 			break;
@@ -110,6 +111,8 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 
 				pubActObj.publish(cmd_obj);
 				ROS_INFO("Objects sent");
+				
+				ros::Duration(2).sleep();
 				
 				pr2_pbd_speech_recognition::Command cmd;
 				cmd.command = cmd.EXECUTE_ACTION;
