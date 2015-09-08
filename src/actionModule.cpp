@@ -4,7 +4,7 @@
  * Public License for more details
 */
 
-#define PERIODE 5
+#define PERIOD 10
 
 #include "actionModule.h"
 
@@ -68,22 +68,34 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 	}
 	
 	//estimate the motivaton signal and delete old policies
-	for(auto count = 0; count << current_policies.size(); count++){
+	for(auto count = 0; count < current_policies.size(); count++){
 		double elapsed_time;
-		elapsed_time += (double)(end-current_policies[count].starting_time).toSec();
-		
-		if(current_policies[count].strenght <= 0 || elapsed_time > 500){
-			current_policies.erase(current_policies.begin()+count);
+		end = ros::Time::now();
+		elapsed_time = (double)(end.toSec()-current_policies[count].starting_time.toSec());
+		if(current_policies[count].strenght <= 0 || elapsed_time > 2*PERIOD){
 			cout<<current_policies[count].cmd<<" ==> deleted"<<endl;
+			current_policies.erase(current_policies.begin()+count);
 			count--;
 		}else{
-			end = ros::Time::now();
 			double T1, T2, T3, T4;
 			//T1 increase as the elapsed_time gets higher than the estimated period T
 			//T2 gets higher when the progress is negative
 			//T3 increases when user ask for help
 			//T4 increases when several policies have the same outcome
 			
+			//T1 based on time and elapsed_time
+			T1 = get_T1(elapsed_time);
+			
+			//T2 based on progress
+			T2 = get_T2(false);
+			
+			//T3 based on user request
+			T3 = get_T3(0);
+			
+			//T4 based on progress
+			T4 = get_T4(0);	
+			
+			cout<<current_policies[count].cmd<<" ==> "<<T1<<" : "<<T2<<" : "<<T3<<" : "<<T4<<endl;
 			
 		}	  
 	}
@@ -117,6 +129,42 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 		pubActExec.publish(cmd);
 		ROS_INFO("Actions sent");
 	}
+}
+
+//T1 increase as the elapsed_time gets higher than the estimated period T
+inline double actionModule::get_T1(const double elapsed_time){
+	double T1 = 0;
+	if(elapsed_time > PERIOD){
+		T1 = ((PERIOD-(2*PERIOD-elapsed_time))/PERIOD);			  
+	}
+	return T1;
+}
+
+//T2 gets higher when the progress is negative
+inline double actionModule::get_T2(const double distance_){
+	double T2 = 0;
+	if(distance_ < 0){
+		T2 = 1;			  
+	}
+	return T2;
+}
+
+//T3 increases when user ask for help
+inline double actionModule::get_T3(const bool request){
+	double T3 = 0;
+	if(request){
+		T3 = 1;			  
+	}
+	return T3;
+}
+
+//T4 increases when several policies have the same outcome
+inline double actionModule::get_T4(const double distance_){
+	double T4 = 0;
+	if(distance_ > 0){
+		T4 = 1;
+	}
+	return T4;
 }
 
 string actionModule::chooseAction(string actionType, double x, double y, double z, double xf, double yf, double zf){

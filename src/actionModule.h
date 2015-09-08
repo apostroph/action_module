@@ -42,6 +42,8 @@ struct policy{
 	string cmd;
 	ros::Time starting_time;
 	double strenght;	
+	int distance;
+	int distance_;
 };
 
 class actionModule{
@@ -79,6 +81,12 @@ private:
   vector<policy> current_policies;
   
   ros::Time begin, end;
+  
+  //Motivational signals
+  inline double get_T1(const double elapsed_time);
+  inline double get_T2(const double distance_);
+  inline double get_T3(const bool request);
+  inline double get_T4(const double distance_);
   
   //Action primitives
   string chooseAction(string actionType, double x, double y, double z, double xf, double yf, double zf);
