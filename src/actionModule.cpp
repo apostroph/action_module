@@ -96,6 +96,30 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 			T4 = get_T4(0);	
 			
 			cout<<current_policies[count].cmd<<" ==> "<<T1<<" : "<<T2<<" : "<<T3<<" : "<<T4<<endl;
+			string _cmd = current_policies[count].cmd;
+			
+			if(T1 > 0.9 && _cmd.compare("pushLeft[big 9 round ]-big 9 round ") == 0){
+			// 	
+			// 	executeAction(action_cmd);
+				pr2_pbd_interaction::Vision cmd_obj;
+				
+				for(auto cluster: msg.clusters){
+					cmd_obj.clusters.push_back(cluster);
+					cout<<"+";
+				}
+
+				pubActObj.publish(cmd_obj);
+				ROS_INFO("Objects sent");
+				
+				pr2_pbd_speech_recognition::Command cmd;
+				cmd.command = cmd.EXECUTE_ACTION;
+				cmd.acton_id = 1;
+
+				pubActExec.publish(cmd);
+				ROS_INFO("Actions sent");
+				
+				current_policies.clear();
+			}
 			
 		}	  
 	}
@@ -107,28 +131,7 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 // 		end = begin;
 // 	}
 	
-	if(0){
-	// 	
-	// 	executeAction(action_cmd);
-		pr2_pbd_interaction::Vision cmd_obj;
-		// 	cmd.command = cmd.EXECUTE_ACTION;
-		// 	cmd.action_id = 0;
-		
-		for(auto cluster: msg.clusters){
-			cmd_obj.clusters.push_back(cluster);
-			cout<<"+";
-		}
 
-		pubActObj.publish(cmd_obj);
-		ROS_INFO("Objects sent");
-		
-		pr2_pbd_speech_recognition::Command cmd;
-		cmd.command = cmd.EXECUTE_ACTION;
-		cmd.acton_id = 1;
-
-		pubActExec.publish(cmd);
-		ROS_INFO("Actions sent");
-	}
 }
 
 //T1 increase as the elapsed_time gets higher than the estimated period T
