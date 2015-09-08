@@ -77,6 +77,8 @@ private:
   void fromDBN(const RGB_pcl::States msg);
   
   vector<policy> current_policies;
+  vector<ros::Time> begin_times;
+  vector<double> strength;
   
   ros::Time begin, end;
   
