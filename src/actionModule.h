@@ -17,6 +17,9 @@
 
 #include <unordered_map> //Only with C++ 11 or above
 
+#include <opencv/cv.h>
+#include "opencv2/highgui/highgui.hpp"
+
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
 
@@ -37,6 +40,7 @@
 #include "pr2_pbd_speech_recognition/Command.h"
 
 using namespace std;
+using namespace cv;
 
 struct policy{
 	string cmd;
@@ -79,13 +83,16 @@ private:
   void fromDBN(const RGB_pcl::States msg);
   
   vector<policy> current_policies;
+  Mat policyVisualization;
   
   ros::Time begin, end;
+  bool request;
+  RGB_pcl::States msg_temp;
   
   //Motivational signals
   inline double get_T1(const double elapsed_time);
   inline double get_T2(const double distance_);
-  inline double get_T3(const bool request);
+  inline double get_T3(const bool request_);
   inline double get_T4(const double distance_);
   
   //Action primitives
