@@ -404,11 +404,10 @@ bool actionModule::loop() {
 				
 				for(auto cluster: msg_temp.clusters){
 					cmd_obj.clusters.push_back(cluster);
-					cout<<"+";
 				}
 
 				pubActObj.publish(cmd_obj);
-				ROS_INFO("Objects sent");
+				cout<<msg_temp.clusters.size()<<" objects sent"<<endl;
 				
 				ros::Duration(2).sleep();
 				
