@@ -126,6 +126,8 @@ add_executable(action_module_node
 src/main.cpp
 src/actionModule.cpp src/actionModule.h src/actionUtils.h)
 
+target_link_libraries(action_module_node ${OpenCV_LIBS})
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(action_module_node action_module_generate_messages_cpp)
