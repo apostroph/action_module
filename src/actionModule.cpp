@@ -58,6 +58,7 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 	for(auto policy: current_policies){
 		if(policy.cmd.compare(actionType) == 0){
 			found = true;
+			policy.strenght = 1;
 			break;
 		}
 	}
@@ -396,6 +397,8 @@ bool actionModule::loop() {
 			
 			string _cmd = current_policies[count].cmd;
 			
+			current_policies[count].strenght -= 0.001;
+			
 			//Put that in another loop, so we can execute the closest action in case two policies have the same Ts
 			if(T1 > 0.8 || T3 == 1){
 			// 	
@@ -413,17 +416,20 @@ bool actionModule::loop() {
 				
 				pr2_pbd_speech_recognition::Command cmd;
 				cmd.command = cmd.EXECUTE_ACTION;
-				cmd.acton_id = 1;
+				int action_pos = _cmd.find("action");
+				int action_nb = stoi(_cmd.substr(action_pos+6, action_pos+7));
+				
+				cmd.acton_id = action_nb;
 
 				pubActExec.publish(cmd);
-				ROS_INFO("%s sent", _cmd.data());
+				cout<< _cmd.data()<<" sent. Action: "<<action_nb<<endl;
 				
 				current_policies.clear();
 			}
 			
 			//Visualization helping
 			cv::putText(policyVisualization, _cmd, cv::Point(15, 15+count*20), CV_FONT_HERSHEY_COMPLEX, 0.4, Scalar(0,0,0));
-			rectangle(policyVisualization, Point(400+count*40, 350), Point(435+count*40, 1+350-350*T1), Scalar(50*count , 50*count, 50*count), -1);
+			rectangle(policyVisualization, Point(400+count*40, 350), Point(435+count*40, 1+350-350*current_policies[count].strenght), Scalar(50*count , 50*count, 50*count), -1);
 			
 		}	  
 	}
