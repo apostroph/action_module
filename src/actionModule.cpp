@@ -55,10 +55,13 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 	
 	bool found = false;
 	//Search if policy already receved in the past
-	for(auto policy: current_policies){
-		if(policy.cmd.compare(actionType) == 0){
+	for(auto count = 0; count < current_policies.size(); count++){
+		if(current_policies[count].cmd.compare(actionType) == 0){
 			found = true;
-			policy.strenght = 1;
+			current_policies[count].strenght += 0.1;
+			if(current_policies[count].strenght > 1){
+				current_policies[count].strenght = 1;
+			}
 			break;
 		}
 	}
