@@ -45,9 +45,9 @@ using namespace cv;
 struct policy{
 	string cmd;
 	ros::Time starting_time;
-	double strenght;	
-	int distance;
-	int distance_;
+	double strength;	
+	int distance;  
+	RGB_pcl::States state_msg;
 };
 
 class actionModule{
@@ -88,9 +88,6 @@ private:
   ros::Time begin, end;
   bool request;
   bool ongoing_action;
-  
-  
-  RGB_pcl::States msg_temp;
   
   //Motivational signals
   inline double get_T1(const double elapsed_time);

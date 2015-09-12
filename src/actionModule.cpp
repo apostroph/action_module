@@ -4,7 +4,7 @@
  * Public License for more details
 */
 
-#define PERIOD 10
+#define PERIOD 4
 
 #include "actionModule.h"
 
@@ -29,8 +29,6 @@ request(false), ongoing_action(false)
 	end = ros::Time::now();
 	begin = ros::Time::now();
 	
-	msg_temp = RGB_pcl::States();
-	
 	//Link the escape comd to the sign out method
 	signal(SIGINT, &actionModule::sigintHandler);
 }
@@ -46,7 +44,6 @@ void actionModule::sigintHandler(int sig)
 void actionModule::fromDBN(const RGB_pcl::States msg){
 // 	
 	string actionType = msg.states[0]+"-"+msg.states[1];
-	msg_temp = msg;
 	
 	if(!ongoing_action){
 		bool found = false;
@@ -54,9 +51,9 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 		for(auto count = 0; count < current_policies.size(); count++){
 			if(current_policies[count].cmd.compare(actionType) == 0){
 				found = true;
-				current_policies[count].strenght += 0.1;
-				if(current_policies[count].strenght > 1){
-					current_policies[count].strenght = 1;
+				current_policies[count].strength += 0.1;
+				if(current_policies[count].strength > 1){
+					current_policies[count].strength = 1;
 				}
 				break;
 			}
@@ -66,7 +63,8 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 			policy new_policy;
 			new_policy.cmd = actionType;
 			new_policy.starting_time = ros::Time::now();
-			new_policy.strenght = 0.5;
+			new_policy.strength = 0.5;
+			new_policy.state_msg = msg;
 			cout<<new_policy.cmd<<" ==> added"<<endl;
 			current_policies.push_back(new_policy);
 		}
@@ -76,6 +74,7 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 
 void actionModule::fromBackend(const std_msgs::String msg){
 	ongoing_action = false;
+	ros::Duration(2).sleep();
 }
 
 
@@ -150,23 +149,31 @@ bool actionModule::loop() {
 	line(policyVisualization, Point(380, 350-0.8*350), Point(600+(40*size), 350-0.8*350), Scalar(0, 150, 0), 2);
 // 	
 	//estimate the motivaton signal and delete old policies
+	double max = 0;
+	double min_dist = DBL_MAX;
+	int index = -1;
 	for(auto count = 0; count < current_policies.size(); count++){
 		double elapsed_time;
 		end = ros::Time::now();
 		elapsed_time = (double)(end.toSec()-current_policies[count].starting_time.toSec());
-		if(current_policies[count].strenght <= 0 || elapsed_time > 2*PERIOD){
+		if(current_policies[count].strength <= 0.33){
 			cout<<current_policies[count].cmd<<" ==> deleted"<<endl;
 			current_policies.erase(current_policies.begin()+count);
 			count--;
 		}else{
 			double T1, T2, T3, T4;
+			T1 = 0;
+			T2 = 0;
+			T3 = 0;
+			T4 = 0;
+			
 			//T1 increase as the elapsed_time gets higher than the estimated period T
 			//T2 gets higher when the progress is negative
 			//T3 increases when user ask for help
 			//T4 increases when several policies have the same outcome
 			
 			//T1 based on time and elapsed_time
-			T1 = get_T1(elapsed_time);
+			T1 = current_policies[count].strength*2*get_T1(elapsed_time);
 			
 			//T2 based on progress
 			T2 = get_T2(false);
@@ -179,47 +186,61 @@ bool actionModule::loop() {
 			
 			string _cmd = current_policies[count].cmd;
 			
-			current_policies[count].strenght -= 0.001;
+			current_policies[count].strength -= 0.005;
 			
-			//Put that in another loop, so we can execute the closest action in case two policies have the same Ts
+			double dist = sqrt(pow((current_policies[count].state_msg.x[0]), 2.0) + pow(current_policies[count].state_msg.y[0], 2.0));
 			if(T1 > 0.8 || T3 == 1){
-			// 	
-			// 	executeAction(action_cmd);
-				pr2_pbd_interaction::Vision cmd_obj;
-				
-				for(auto cluster: msg_temp.clusters){
-					cmd_obj.clusters.push_back(cluster);
+				if(T1 >= max && dist < min_dist){
+					max = T1;
+					min_dist = dist;
+					index = count;
 				}
-
-				pubActObj.publish(cmd_obj);
-				cout<<msg_temp.clusters.size()<<" objects sent"<<endl;
-				
-				ros::Duration(2).sleep();
-				
-				pr2_pbd_speech_recognition::Command cmd;
-				cmd.command = cmd.EXECUTE_ACTION;
-				int action_pos = _cmd.find("action");
-				int action_nb = stoi(_cmd.substr(action_pos+6, action_pos+7));
-				
-				int right = 0;
-				if(msg_temp.y[0] < 0){
-					right = 1;
-				}
-				cmd.acton_id = 2*action_nb+right;
-
-				pubActExec.publish(cmd);
-				cout<< _cmd.data()<<" sent. Action: "<<action_nb<<endl;
-				
-				current_policies.clear();
-				
-				ongoing_action = true;
 			}
 			
 			//Visualization helping
 			cv::putText(policyVisualization, _cmd, cv::Point(15, 15+count*20), CV_FONT_HERSHEY_COMPLEX, 0.4, Scalar(0,0,0));
-			rectangle(policyVisualization, Point(400+count*40, 350), Point(435+count*40, 1+350-350*current_policies[count].strenght), Scalar(50*count , 50*count, 50*count), -1);
+			rectangle(policyVisualization, Point(400+count*40, 350), Point(435+count*40, 1+350-350*T1), Scalar(50*count , 50*count, 50*count), -1);
 			
 		}	  
+	}
+	
+	for(auto count = 0; count < current_policies.size(); count++){
+		double value = current_policies[count].strength;
+		rectangle(policyVisualization, Point(415+count*40, 350), Point(420+count*40, 1+350-350*value), Scalar(0, 200, 0), -1);
+	}
+	
+	//choose best action to execute
+	
+	if(index != -1){
+		  pr2_pbd_interaction::Vision cmd_obj;
+		  
+		  for(auto cluster: current_policies[index].state_msg.clusters){
+			  cmd_obj.clusters.push_back(cluster);
+		  }
+
+		  pubActObj.publish(cmd_obj);
+		  cout<<current_policies[index].state_msg.clusters.size()<<" objects sent"<<endl;
+		  
+		  ros::Duration(2).sleep();
+		  
+		  pr2_pbd_speech_recognition::Command cmd;
+		  cmd.command = cmd.EXECUTE_ACTION;
+		  int action_pos = current_policies[index].cmd.find("action");
+		  int action_nb = stoi(current_policies[index].cmd.substr(action_pos+6, action_pos+7));
+		  
+		  int left = 0;
+		  cout<<current_policies[index].state_msg.y[0]<<" : "<<current_policies[index].state_msg.x[0]<<endl;
+		  if(current_policies[index].state_msg.y[0] < 0){
+			  left = 1;
+		  }
+		  cmd.acton_id = 2*action_nb-left;
+
+		  pubActExec.publish(cmd);
+		  cout<< current_policies[index].cmd.data()<<" sent. Action: "<<cmd.acton_id<<endl;
+		  
+		  current_policies.clear();
+		  
+		  ongoing_action = true;
 	}
 	
 	imshow("Visualization", policyVisualization);
