@@ -65,9 +65,8 @@ private:
   
   ros::NodeHandle n;
   ros::AsyncSpinner *spinner;
+  ros::Subscriber action_feedback;
   ros::Subscriber subDBN;
-  ros::ServiceServer service;
-  ros::Publisher pubHand;
   
   ros::Publisher pubActObj;
   ros::Publisher pubActExec;
@@ -81,12 +80,16 @@ private:
   //claaback methods
   void callbackPR2_cmd(const std_msgs::String msg);
   void fromDBN(const RGB_pcl::States msg);
+  void fromBackend(const std_msgs::String msg);
   
   vector<policy> current_policies;
   Mat policyVisualization;
   
   ros::Time begin, end;
   bool request;
+  bool ongoing_action;
+  
+  
   RGB_pcl::States msg_temp;
   
   //Motivational signals
@@ -94,18 +97,6 @@ private:
   inline double get_T2(const double distance_);
   inline double get_T3(const bool request_);
   inline double get_T4(const double distance_);
-  
-  //Action primitives
-  string chooseAction(string actionType, double x, double y, double z, double xf, double yf, double zf);
-  void executeAction(const string action_def);
-  std::vector<actUtils::handPose> parseAction(const string action_def); 
-  void getQuaternion(float &qx, float &qy, float &qz, float &qw, float angle = 0);
-  
-  string pre_grasp(double x, double y, double z);
-  string graps(double x, double y, double z);
-  string post_grasp(double x, double y, double z);
-  string release(double x, double y, double z);
-  string init_pos();
   
 };
 
