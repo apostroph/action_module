@@ -54,6 +54,7 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 				current_policies[count].strength += 0.1;
 				if(current_policies[count].strength > 1){
 					current_policies[count].strength = 1;
+					current_policies[count].state_msg = msg;
 				}
 				break;
 			}
@@ -63,7 +64,7 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 			policy new_policy;
 			new_policy.cmd = actionType;
 			new_policy.starting_time = ros::Time::now();
-			new_policy.strength = 0.5;
+			new_policy.strength = 0.6;
 			new_policy.state_msg = msg;
 			cout<<new_policy.cmd<<" ==> added"<<endl;
 			current_policies.push_back(new_policy);
@@ -133,20 +134,6 @@ bool actionModule::loop() {
 	if(nbP > 10){
 		size = nbP-10;
 	}
-	policyVisualization = cv::Mat(Size(600+(20*size), 400+(40*size)), CV_8UC3);
-	policyVisualization = Scalar(255, 255, 255);
-	
-	
-	//Separation lines
-	line(policyVisualization, Point(380, 400), Point(380, 0), Scalar(0, 0, 0), 2);
-	line(policyVisualization, Point(380, 400), Point(600+(40*size), 400), Scalar(0, 0, 0), 2);
-	
-	//graph lines
-	line(policyVisualization, Point(395, 350), Point(395, 50), Scalar(0, 0, 0), 1);
-	line(policyVisualization, Point(395, 350), Point(550+(40*size), 350), Scalar(0, 0, 0), 1);
-	
-	//Threshold line
-	line(policyVisualization, Point(380, 350-0.8*350), Point(600+(40*size), 350-0.8*350), Scalar(0, 150, 0), 2);
 // 	
 	//estimate the motivaton signal and delete old policies
 	double max = 0;
@@ -173,18 +160,23 @@ bool actionModule::loop() {
 			//T4 increases when several policies have the same outcome
 			
 			//T1 based on time and elapsed_time
-			T1 = current_policies[count].strength*2*get_T1(elapsed_time);
+			if(current_policies[count].strength > 0.6){
+				T1 = current_policies[count].strength*2*get_T1(elapsed_time);
 			
-			//T2 based on progress
-			T2 = get_T2(false);
-			
-			//T3 based on user request
-			T3 = get_T3(request);
-			
-			//T4 based on progress
-			T4 = get_T4(0);	
-			
-			string _cmd = current_policies[count].cmd;
+				//T2 based on progress
+				T2 = get_T2(false);
+				
+				//T3 based on user request
+				T3 = get_T3(request);
+				
+				//T4 based on progress
+				T4 = get_T4(0);	
+			}
+					
+			//Visualization helping
+			string _cmd = current_policies[count].cmd;	
+			cv::putText(policyVisualization, _cmd, cv::Point(15, 15+count*20), CV_FONT_HERSHEY_COMPLEX, 0.4, Scalar(0,0,0));
+			rectangle(policyVisualization, Point(400+count*40, 350), Point(435+count*40, 1+350-350*T1), Scalar(50*count , 50*count, 50*count), -1);
 			
 			current_policies[count].strength -= 0.005;
 			
@@ -197,20 +189,29 @@ bool actionModule::loop() {
 				}
 			}
 			
-			//Visualization helping
-			cv::putText(policyVisualization, _cmd, cv::Point(15, 15+count*20), CV_FONT_HERSHEY_COMPLEX, 0.4, Scalar(0,0,0));
-			rectangle(policyVisualization, Point(400+count*40, 350), Point(435+count*40, 1+350-350*T1), Scalar(50*count , 50*count, 50*count), -1);
-			
 		}	  
 	}
 	
+	policyVisualization = cv::Mat(Size(600+(20*size), 400+(40*size)), CV_8UC3);
+	policyVisualization = Scalar(255, 255, 255);
+	
+	//Separation lines
+	line(policyVisualization, Point(380, 400), Point(380, 0), Scalar(0, 0, 0), 2);
+	line(policyVisualization, Point(380, 400), Point(600+(40*size), 400), Scalar(0, 0, 0), 2);
+	
+	//graph lines
+	line(policyVisualization, Point(395, 350), Point(395, 50), Scalar(0, 0, 0), 1);
+	line(policyVisualization, Point(395, 350), Point(550+(40*size), 350), Scalar(0, 0, 0), 1);
+	
+	//Threshold line
+	line(policyVisualization, Point(380, 350-0.8*350), Point(600+(40*size), 350-0.8*350), Scalar(0, 150, 0), 2);
 	for(auto count = 0; count < current_policies.size(); count++){
 		double value = current_policies[count].strength;
+			
 		rectangle(policyVisualization, Point(415+count*40, 350), Point(420+count*40, 1+350-350*value), Scalar(0, 200, 0), -1);
 	}
 	
 	//choose best action to execute
-	
 	if(index != -1){
 		  pr2_pbd_interaction::Vision cmd_obj;
 		  
@@ -219,7 +220,7 @@ bool actionModule::loop() {
 		  }
 
 		  pubActObj.publish(cmd_obj);
-		  cout<<current_policies[index].state_msg.clusters.size()<<" objects sent"<<endl;
+		  cout<<"Objects sent"<<endl;
 		  
 		  ros::Duration(2).sleep();
 		  
@@ -230,7 +231,7 @@ bool actionModule::loop() {
 		  
 		  int left = 0;
 		  cout<<current_policies[index].state_msg.y[0]<<" : "<<current_policies[index].state_msg.x[0]<<endl;
-		  if(current_policies[index].state_msg.y[0] < 0){
+		  if(current_policies[index].state_msg.y[0] > 0){
 			  left = 1;
 		  }
 		  cmd.acton_id = 2*action_nb-left;

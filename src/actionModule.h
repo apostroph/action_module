@@ -15,27 +15,13 @@
 #include "std_msgs/String.h"
 #include <signal.h>
 
-#include <unordered_map> //Only with C++ 11 or above
-
 #include <opencv/cv.h>
 #include "opencv2/highgui/highgui.hpp"
 
 #include <ros/ros.h>
-#include <geometry_msgs/Pose.h>
-
-// MoveIt!
-#include <moveit/move_group_interface/move_group.h>
-#include <moveit/planning_scene_interface/planning_scene_interface.h>
-
-#include <moveit_msgs/DisplayRobotState.h>
-#include <moveit_msgs/DisplayTrajectory.h>
-
-#include <moveit_msgs/AttachedCollisionObject.h>
-#include <moveit_msgs/CollisionObject.h>
 
 #include "actionUtils.h"
 #include "RGB_pcl/States.h"
-#include "pr2_controllers_msgs/Pr2GripperCommand.h"
 #include "pr2_pbd_interaction/Vision.h"
 #include "pr2_pbd_speech_recognition/Command.h"
 
@@ -70,10 +56,6 @@ private:
   
   ros::Publisher pubActObj;
   ros::Publisher pubActExec;
-  
-  moveit::planning_interface::MoveGroup *groupRight;
-  moveit::planning_interface::MoveGroup *groupLeft;
-  moveit::planning_interface::PlanningSceneInterface *planning_scene_interface;
   
   //ROS quit handler
   static void sigintHandler(int sig);
