@@ -172,11 +172,6 @@ bool actionModule::loop() {
 				//T4 based on progress
 				T4 = get_T4(0);	
 			}
-					
-			//Visualization helping
-			string _cmd = current_policies[count].cmd;	
-			cv::putText(policyVisualization, _cmd, cv::Point(15, 15+count*20), CV_FONT_HERSHEY_COMPLEX, 0.4, Scalar(0,0,0));
-			rectangle(policyVisualization, Point(400+count*40, 350), Point(435+count*40, 1+350-350*T1), Scalar(50*count , 50*count, 50*count), -1);
 			
 			current_policies[count].strength -= 0.005;
 			
@@ -188,6 +183,11 @@ bool actionModule::loop() {
 					index = count;
 				}
 			}
+					
+			//Visualization helping
+			string _cmd = current_policies[count].cmd;	
+			cv::putText(policyVisualization, _cmd, cv::Point(15, 15+count*20), CV_FONT_HERSHEY_COMPLEX, 0.4, Scalar(0,0,0));
+			rectangle(policyVisualization, Point(400+count*40, 350), Point(435+count*40, 1+350-350*T1), Scalar(50*count , 50*count, 50*count), -1);
 			
 		}	  
 	}
