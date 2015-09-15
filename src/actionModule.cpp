@@ -58,6 +58,7 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 				if(current_policies[count].strength > 1){
 					current_policies[count].strength = 1;
 					current_policies[count].state_msg = msg;
+					current_policies[count].distance = 0;
 				}
 				break;
 			}
@@ -69,6 +70,7 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 			new_policy.starting_time = ros::Time::now();
 			new_policy.strength = 0.6;
 			new_policy.state_msg = msg;
+			new_policy.distance = 0;
 			cout<<new_policy.cmd<<" ==> added"<<endl;
 			current_policies.push_back(new_policy);
 		}
@@ -80,6 +82,7 @@ void actionModule::fromBackend(const std_msgs::String msg){
 	string input = msg.data.c_str();
 	if(input.compare("action_ended") == 0){
 		ongoing_action = false;
+		request = false;
 	}
 	ros::Duration(2).sleep();
 }
@@ -146,6 +149,7 @@ bool actionModule::loop() {
 // 	
 	//estimate the motivaton signal and delete old policies
 	double max = 0;
+	double max_variation = 0;
 	double min_dist = DBL_MAX;
 	int index = -1;
 	for(auto count = 0; count < current_policies.size(); count++){
@@ -179,8 +183,19 @@ bool actionModule::loop() {
 					current_policies[count].distance = 1.5-dist;
 				}
 				//T4 based on progress
-				if(condition == 2){
-					T1 = get_T4(0);	
+				if(condition == 2 && !request){
+// 					cout<<current_policies[count].strength<<" :: "<<current_policies[count].distance<<endl;
+					if(current_policies[count].strength > 0.8 && current_policies[count].distance == 0){
+						current_policies[count].distance = 1;
+					}else if(current_policies[count].strength < 0.7 && current_policies[count].distance > 0.1){
+						current_policies[count].distance -= 0.01;
+					}
+					T1 = current_policies[count].distance;
+					
+					if(current_policies[count].strength < 0.7 && current_policies[count].distance < 0.8 && current_policies[count].distance > 0.1){
+						T1 = 0;
+						request = true;
+					}
 				}
 				if(condition == 3){
 					T1 = current_policies[count].strength*2*get_T1(elapsed_time);
@@ -223,7 +238,7 @@ bool actionModule::loop() {
 	}
 	
 	//choose best action to execute
-	if(index != -1){
+	if((index != -1 && condition != 2) || (index != -1 && request && condition == 2)){
 		  std_msgs::String message;
 
 		  std::stringstream ss;
@@ -270,10 +285,12 @@ bool actionModule::loop() {
 	
 	end = ros::Time::now();
 	
-	request = false;
 	int k = cv::waitKey(1);
-	if(k == 32){
-		request = true;
+	if(condition == 1){
+		request = false;
+		if(k == 32){
+			request = true;
+		}
 	}
     }
     ros::shutdown();
