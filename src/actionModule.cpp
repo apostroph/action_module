@@ -22,12 +22,12 @@ request(false), ongoing_action(false)
 	condition = 1;
 	n.getParam("cond", condition);
 	
+	subDBN = n.subscribe ("/DBN/states_list", 1, &actionModule::fromDBN, this);
+	action_feedback = n.subscribe ("/action_state_feedback", 1, &actionModule::fromBackend, this);
+	
 	pubActObj = n.advertise<pr2_pbd_interaction::Vision> ("/action/objects", 1);
 	pubActExec = n.advertise<pr2_pbd_speech_recognition::Command> ("/action/perform_action", 1);
-	
-	subDBN = n.subscribe ("/DBN/states_list", 1, &actionModule::fromDBN, this);
-	
-	action_feedback = n.subscribe ("/action_state_feedback", 1, &actionModule::fromBackend, this);
+	to_action_feedback = n.advertise<std_msgs::String> ("/action_state_feedback", 1);
 	
 	end = ros::Time::now();
 	begin = ros::Time::now();
@@ -77,7 +77,10 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 
 
 void actionModule::fromBackend(const std_msgs::String msg){
-	ongoing_action = false;
+	string input = msg.data.c_str();
+	if(input.compare("action_ended") == 0){
+		ongoing_action = false;
+	}
 	ros::Duration(2).sleep();
 }
 
@@ -219,6 +222,14 @@ bool actionModule::loop() {
 	
 	//choose best action to execute
 	if(index != -1){
+		  std_msgs::String message;
+
+		  std::stringstream ss;
+		  ss << "action_started " ;
+		  message.data = ss.str();
+		  
+		  to_action_feedback.publish(message);
+		  
 		  pr2_pbd_interaction::Vision cmd_obj;
 		  
 		  for(auto cluster: current_policies[index].state_msg.clusters){
