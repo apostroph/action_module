@@ -70,6 +70,7 @@ private:
   ros::Time begin, end;
   bool request;
   bool ongoing_action;
+  int condition;
   
   //Motivational signals
   inline double get_T1(const double elapsed_time);

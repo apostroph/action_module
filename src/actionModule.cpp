@@ -19,6 +19,9 @@ request(false), ongoing_action(false)
 	spinner = new ros::AsyncSpinner(1);
 	spinner->start();
 	
+	condition = 1;
+	n.getParam("cond", condition);
+	
 	pubActObj = n.advertise<pr2_pbd_interaction::Vision> ("/action/objects", 1);
 	pubActExec = n.advertise<pr2_pbd_speech_recognition::Command> ("/action/perform_action", 1);
 	
@@ -161,22 +164,25 @@ bool actionModule::loop() {
 			
 			//T1 based on time and elapsed_time
 			if(current_policies[count].strength > 0.6){
-				T1 = current_policies[count].strength*2*get_T1(elapsed_time);
-			
-				//T2 based on progress
-				T2 = get_T2(false);
 				
 				//T3 based on user request
-				T3 = get_T3(request);
-				
+				if(condition == 1){
+					T1 = get_T3(request);
+				}
 				//T4 based on progress
-				T4 = get_T4(0);	
+				if(condition == 2){
+					T1 = get_T4(0);	
+				}
+				if(condition == 3){
+					T1 = current_policies[count].strength*2*get_T1(elapsed_time);
+				}
+				
 			}
 			
 			current_policies[count].strength -= 0.005;
 			
 			double dist = sqrt(pow((current_policies[count].state_msg.x[0]), 2.0) + pow(current_policies[count].state_msg.y[0], 2.0));
-			if(T1 > 0.8 || T3 == 1){
+			if(T1 > 0.8){
 				if(T1 >= max && dist < min_dist){
 					max = T1;
 					min_dist = dist;
