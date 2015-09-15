@@ -140,6 +140,9 @@ bool actionModule::loop() {
 	if(nbP > 10){
 		size = nbP-10;
 	}
+	
+	policyVisualization = cv::Mat(Size(600+(20*size), 400+(40*size)), CV_8UC3);
+	policyVisualization = Scalar(255, 255, 255);
 // 	
 	//estimate the motivaton signal and delete old policies
 	double max = 0;
@@ -165,12 +168,15 @@ bool actionModule::loop() {
 			//T3 increases when user ask for help
 			//T4 increases when several policies have the same outcome
 			
+			double dist = sqrt(pow((current_policies[count].state_msg.x[0]), 2.0) + pow(current_policies[count].state_msg.y[0], 2.0));
+			
 			//T1 based on time and elapsed_time
 			if(current_policies[count].strength > 0.6){
 				
 				//T3 based on user request
 				if(condition == 1){
 					T1 = get_T3(request);
+					current_policies[count].distance = 1.5-dist;
 				}
 				//T4 based on progress
 				if(condition == 2){
@@ -178,13 +184,17 @@ bool actionModule::loop() {
 				}
 				if(condition == 3){
 					T1 = current_policies[count].strength*2*get_T1(elapsed_time);
+					current_policies[count].distance = T1;
 				}
 				
 			}
 			
-			current_policies[count].strength -= 0.005;
+			//Visualization helping
+			string _cmd = current_policies[count].cmd;	
+			cv::putText(policyVisualization, _cmd, cv::Point(15, 15+count*20), CV_FONT_HERSHEY_COMPLEX, 0.4, Scalar(0,0,0));
+			rectangle(policyVisualization, Point(400+count*40, 350), Point(435+count*40, 1+350-350*current_policies[count].distance), Scalar(50*count , 50*count, 50*count), -1);
 			
-			double dist = sqrt(pow((current_policies[count].state_msg.x[0]), 2.0) + pow(current_policies[count].state_msg.y[0], 2.0));
+			current_policies[count].strength -= 0.005;
 			if(T1 > 0.8){
 				if(T1 >= max && dist < min_dist){
 					max = T1;
@@ -192,17 +202,9 @@ bool actionModule::loop() {
 					index = count;
 				}
 			}
-					
-			//Visualization helping
-			string _cmd = current_policies[count].cmd;	
-			cv::putText(policyVisualization, _cmd, cv::Point(15, 15+count*20), CV_FONT_HERSHEY_COMPLEX, 0.4, Scalar(0,0,0));
-			rectangle(policyVisualization, Point(400+count*40, 350), Point(435+count*40, 1+350-350*T1), Scalar(50*count , 50*count, 50*count), -1);
 			
 		}	  
 	}
-	
-	policyVisualization = cv::Mat(Size(600+(20*size), 400+(40*size)), CV_8UC3);
-	policyVisualization = Scalar(255, 255, 255);
 	
 	//Separation lines
 	line(policyVisualization, Point(380, 400), Point(380, 0), Scalar(0, 0, 0), 2);

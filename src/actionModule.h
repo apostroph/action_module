@@ -32,7 +32,7 @@ struct policy{
 	string cmd;
 	ros::Time starting_time;
 	double strength;	
-	int distance;  
+	double distance;  
 	RGB_pcl::States state_msg;
 };
 
