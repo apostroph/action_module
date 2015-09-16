@@ -256,7 +256,7 @@ bool actionModule::loop() {
 		  pubActObj.publish(cmd_obj);
 		  cout<<"Objects sent"<<endl;
 		  
-		  ros::Duration(2).sleep();
+		  ros::Duration(0.1).sleep();
 		  
 		  pr2_pbd_speech_recognition::Command cmd;
 		  cmd.command = cmd.EXECUTE_ACTION;
