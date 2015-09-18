@@ -55,9 +55,9 @@ void actionModule::fromDBN(const RGB_pcl::States msg){
 			if(current_policies[count].cmd.compare(actionType) == 0){
 				found = true;
 				current_policies[count].strength += 0.1;
+				current_policies[count].state_msg = msg;
 				if(current_policies[count].strength > 1){
 					current_policies[count].strength = 1;
-					current_policies[count].state_msg = msg;
 					current_policies[count].distance = 0;
 				}
 				break;
@@ -198,7 +198,7 @@ bool actionModule::loop() {
 					}
 				}
 				if(condition == 3){
-					T1 = current_policies[count].strength*2*get_T1(elapsed_time);
+					T1 = current_policies[count].strength;//*2*get_T1(elapsed_time);
 					current_policies[count].distance = T1;
 				}
 				
@@ -209,8 +209,9 @@ bool actionModule::loop() {
 			cv::putText(policyVisualization, _cmd, cv::Point(15, 15+count*20), CV_FONT_HERSHEY_COMPLEX, 0.4, Scalar(0,0,0));
 			rectangle(policyVisualization, Point(400+count*40, 350), Point(435+count*40, 1+350-350*current_policies[count].distance), Scalar(50*count , 50*count, 50*count), -1);
 			
+			double s = current_policies[count].strength;
 			current_policies[count].strength -= 0.005;
-			if(T1 > 0.8){
+			if(T1 > 0.8 && current_policies[count].strength > 0.7){
 				if(T1 >= max && dist < min_dist){
 					max = T1;
 					min_dist = dist;

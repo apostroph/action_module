@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <math.h>
 
 #include "std_msgs/String.h"
 #include <signal.h>
