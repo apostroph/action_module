@@ -234,6 +234,7 @@ bool actionModule::loop() {
 	
 	//choose best action to execute
 	if(index != -1){
+		  ROS_INFO("Action module");
 		  std_msgs::String message;
 
 		  std::stringstream ss;
@@ -249,7 +250,6 @@ bool actionModule::loop() {
 		  }
 
 		  pubActObj.publish(cmd_obj);
-		  cout<<"Objects sent"<<endl;
 		  
 		  ros::Duration(0.1).sleep();
 		  
