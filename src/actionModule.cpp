@@ -160,6 +160,10 @@ bool actionModule::loop() {
 			cout<<current_policies[count].cmd<<" ==> deleted"<<endl;
 			current_policies.erase(current_policies.begin()+count);
 			count--;
+			if(condition == 3){
+				current_policies.clear();
+				break;
+			}
 		}else{
 			double T1, T2, T3, T4;
 			T1 = 0;
@@ -183,22 +187,12 @@ bool actionModule::loop() {
 					current_policies[count].distance = 1.5-dist;
 				}
 				//T4 based on progress
-				if(condition == 2 && !request){
-// 					cout<<current_policies[count].strength<<" :: "<<current_policies[count].distance<<endl;
-					if(current_policies[count].strength > 0.8 && current_policies[count].distance == 0){
-						current_policies[count].distance = 1;
-					}else if(current_policies[count].strength < 0.7 && current_policies[count].distance > 0.1){
-						current_policies[count].distance -= 0.01;
-					}
-					T1 = current_policies[count].distance;
-					
-					if(current_policies[count].strength < 0.7 && current_policies[count].distance < 0.8 && current_policies[count].distance > 0.1){
-						T1 = 0;
-						request = true;
-					}
+				if(condition == 2){
+					T1 = current_policies[count].strength;//*2*get_T1(elapsed_time);
+					current_policies[count].distance = T1;
 				}
 				if(condition == 3){
-					T1 = current_policies[count].strength;//*2*get_T1(elapsed_time);
+					T1 = current_policies[count].strength*0.5*get_T1(elapsed_time);
 					current_policies[count].distance = T1;
 				}
 				
@@ -239,7 +233,7 @@ bool actionModule::loop() {
 	}
 	
 	//choose best action to execute
-	if((index != -1 && condition != 2) || (index != -1 && request && condition == 2)){
+	if(index != -1){
 		  std_msgs::String message;
 
 		  std::stringstream ss;
